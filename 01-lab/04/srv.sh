@@ -1,13 +1,13 @@
 #!/bin/bash
-src="zrodlo"
-res="wyniki"
+src='zrodlo'
+res='wyniki'
 
 while true
 do
-  if [ -f $src ]
+  if [ -e $src ]
   then
     result=$(cat $src | bc)
     echo $result > $res
-    echo "" > $src
+    rm $src
   fi
 done

@@ -1,18 +1,16 @@
 #!/bin/bash
-src="zrodlo"
-res="wyniki"
+src='zrodlo'
+res='wyniki'
+
+if [ -f $res ]; then rm $res; fi
 
 read polynomial
-
-if [ -f $src ]; then echo "" > $src; fi
-if [ -f $res ]; then echo "" > $res; fi
-
 echo $polynomial > $src
-cat $src
 
-if [ -f $res ]
-then
-  cat $res
-  exit
-fi
+while [ ! -f $res ]
+do
+  [ -f $res ] && break;
+done
 
+cat $res 
+rm $res
