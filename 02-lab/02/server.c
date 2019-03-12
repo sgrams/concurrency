@@ -64,7 +64,7 @@ int main (void) {
     
       // remove lockfile
       unlink (lockfile_path);
-      open (server_buf_path, O_RDONLY | O_WRONLY | O_TRUNC); // clear server buffer
+      unlink (server_buf_path);
 
       if (buffer) {
         free (buffer);
