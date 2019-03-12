@@ -13,6 +13,7 @@ int write_buffer (const char *out_file, char *buffer, int size)
     return -1;
   }
   write (fd, buffer, size);
+  close (fd);
 
   return 0;
 }
@@ -29,14 +30,16 @@ int read_buffer (const char *in_file, char **buffer, int size)
   if (size < 1) {
     return -1;
   }
+
   int fd;
-  *buffer = malloc (sizeof (char) * size);
+  *buffer = malloc (sizeof (char) * (size + 1));
   if ((*buffer) == NULL) {
     return -1;
   }
   fd = open (in_file, O_RDONLY);
   read (fd, *buffer, size);
-  buffer[size - 1] = '\0';
+  buffer[size] = '\0';
+  close (fd);
 
   return 0;
 }
@@ -52,7 +55,7 @@ void lockfile_loop (const char *loopfile)
 
 void response_loop (const char *responsefile)
 {
-  while (access (responsefile, F_OK) == -1);
+  while (access (responsefile, F_OK) != -1);
 }
 
 char *get_message ()

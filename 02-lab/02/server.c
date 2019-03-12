@@ -36,37 +36,57 @@ int main (void) {
   while (1)
   {
     // wait for lockfile
-    response_loop (lockfile_path);
-    response_loop (server_buf_path);
+    if (access (lockfile_path, F_OK) == 0) {
+      buffer = NULL;
+      hello  = NULL;
+      msg    = NULL;
 
-    // read client message
-    size = file_length (server_buf_path);
-    read_buffer (server_buf_path, &buffer, size);
-    parse_buffer (buffer, &hello, size);
+      // read client message
+      chmod (server_buf_path, 777);
+      size = file_length (server_buf_path);
+      read_buffer (server_buf_path, &buffer, size);
+      parse_buffer (buffer, &hello, size);
+
+      // get client buffer path
+      client_buf_path_len = strlen ("/home/") + strlen (hello) + 1 + strlen (DEFAULT_CLIENT_BUF_NAME);
+      client_buf_path = malloc (sizeof (char) * (client_buf_path_len + 1));
+      chmod (client_buf_path, 777);
+      snprintf (client_buf_path, client_buf_path_len + 1, "/home/%s/%s", hello, DEFAULT_CLIENT_BUF_NAME);
+
+      // read message
+      printf ("%s\n", buffer);
+
+      // write msg to client buffer
+      msg  = get_message ();
+      size = strlen (msg) + 1;
+      msg[size - 1] = '\0';
+      write_buffer (client_buf_path, msg, size);
     
-    // display message
-    for (int i = 0; i < size; ++i)
-    {
-      printf("%c", buffer[i]);
+      // remove lockfile
+      unlink (lockfile_path);
+      open (server_buf_path, O_RDONLY | O_WRONLY | O_TRUNC); // clear server buffer
+
+      if (buffer) {
+        free (buffer);
+      }
+      if (client_buf_path) {
+        free (client_buf_path);
+      }
+      if (msg) {
+        free (msg);
+      }
+      if (hello) {
+        free (hello);
+      }
     }
-    printf ("\n");
-    free (buffer);
-
-    // get client buffer path
-    client_buf_path_len = strlen ("/home/") + strlen (hello) + 1 + strlen (DEFAULT_CLIENT_BUF_NAME) + 1;
-    client_buf_path = malloc (sizeof (char) * (client_buf_path_len + 1));
-    chmod (client_buf_path, 777);
-    snprintf (client_buf_path, client_buf_path_len, "/home/%s/%s", getenv("USER"), DEFAULT_CLIENT_BUF_NAME);
-
-    // write msg to client buffer
-    msg  = get_message ();
-    size = sizeof (msg);
-    write_buffer (client_buf_path, msg, size);
-    
-    // remove lockfile
-    unlink (lockfile_path);
-    unlink (server_buf_path);
   }
+  if (lockfile_path) {
+    free (lockfile_path);
+  }
+  if (server_buf_path) {
+    free (server_buf_path);
+  }
+
   return EXIT_SUCCESS;
 }
 
