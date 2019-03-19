@@ -13,7 +13,7 @@ ILOSC_POTOMNYCH=0
 for dir in $(find "$KATALOG" -maxdepth 1 -mindepth 1 -type d)
 do
   ./szukaj.sh $PLIK $dir "TRUE" &
-  ILOSC_POTOMNYCH+=1
+  ((ILOSC_POTOMNYCH=$ILOSC_POTOMNYCH+1))
 done
 
 ZNALEZIONO=0
@@ -22,11 +22,18 @@ for file in $(find "$KATALOG" -maxdepth 1 -mindepth 1 -type f -printf "%f\n")
 do
   if [ "$file" == "$PLIK" ]; then
     echo "$KATALOG/$PLIK"
-    ZNALEZIONO+=1
+    ((ZNALEZIONO=$ZNALEZIONO+1))
   fi
 done
 
-while [ ILOSC_POTOMNYCH -gt 0 ]
+while [ "$ILOSC_POTOMNYCH" -gt 0 ]
 do
-
+  wait
+  ((ILOSC_POTOMNYCH=$ILOSC_POTOMNYCH-1))
 done
+
+if [ -z "$POTOMNY" ]; then
+  if [ "$ZNALEZIONO" -eq 0 ]; then
+    echo "Nie znaleziono podanego pliku"
+  fi
+fi
