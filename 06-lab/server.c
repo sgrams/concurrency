@@ -59,7 +59,7 @@ int32_t request_handle (request_t *req)
   for (int32_t i = 0; i < DEFAULT_DICT_SIZE; ++i)
   {
     if (!strcmp (dict[i].pl, req->word)) {
-      strncpy (req->word, dict[i].en, strlen (dict[i].en));
+      strncpy (req->word, dict[i].en, strlen (dict[i].en) + 1);
       if (!strlen (req->word)) {
         status = EXIT_FAILURE;
       }
