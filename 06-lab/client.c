@@ -13,8 +13,13 @@ int64_t ipcq_client;
 
 int32_t main (int argc, char *argv[])
 {
-  if (argc < 2 || strlen (argv[1]) >= 256) {
-    fprintf (stderr, "Invalid parameters!\n");
+  char *word = malloc (DEFAULT_WORD_SIZE * sizeof (char));
+
+  printf ("Prosze wprowadz slowo do przetlumaczenia: [pl] ");
+  scanf ("%s", word);
+
+  if (strlen (word) >= DEFAULT_WORD_SIZE) {
+    fprintf (stderr, "Slowo zbyt dlugie!\n");
     return EXIT_FAILURE;
   }
 
@@ -26,7 +31,7 @@ int32_t main (int argc, char *argv[])
   request_t req;
   memset (&req, 0, sizeof (req));
 
-  strncpy (req.word, argv[1], strlen (argv[1]));
+  strncpy (req.word, word, strlen (word));
   req.type = 0x1;
   req.pid  = getpid ();
 
@@ -39,5 +44,9 @@ int32_t main (int argc, char *argv[])
   msgrcv (ipcq_client, &res, sizeof (response_t) - sizeof (int64_t), 0, 0);
 
   printf ("pl: %s, en: %s\n", req.word, res.word);
+
+  if (word) {
+    free (word);
+  }
   return EXIT_SUCCESS;
 }
