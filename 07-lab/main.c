@@ -10,11 +10,7 @@
 #include <signal.h>
 #include <string.h>
 #include <stdint.h>
-<<<<<<< HEAD
 #include <curses.h>
-=======
-#include <errno.h>
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -39,19 +35,11 @@
 #define SEM_PLAYER_1 1
 
 // prototypes
-<<<<<<< HEAD
 int8_t game_move_check   (board_t board);
 int8_t game_move_make    (board_t board, cell_t row, cell_t col, cell_t player_sign);
 void   game_print_board  (board_t board);
 void   game_print_header (cell_t player_sign);
 void   teardown (int32_t signal);
-=======
-void   game_print_board (board_t board);
-int8_t game_move_check  (board_t board);
-int8_t game_move_make   (board_t board, cell_t row, cell_t col, cell_t player_sign);
-
-void teardown (int32_t signal);
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
 
 // globals
 int32_t shared_memory;
@@ -59,7 +47,6 @@ int32_t semaphore;
 
 int32_t main (int argc, char *argv[])
 {
-<<<<<<< HEAD
   board_t board;
   cell_t *shared_memory_ptr;
   cell_t  player_sign;
@@ -82,21 +69,6 @@ int32_t main (int argc, char *argv[])
   echo ();
   refresh ();
 
-=======
-  cell_t *shared_memory_ptr;
-  cell_t  player_sign;
-  board_t board;
-
-  struct sembuf try_move_X = {SEM_PLAYER_0, -1, 0},
-                try_move_O = {SEM_PLAYER_1, -1, 0},
-                try_X = {SEM_PLAYER_0, 1, 0},
-                try_O = {SEM_PLAYER_1, 1, 0},
-                *move,
-                *lock;
-
-  // gracefully quit on Ctrl+C
-  signal (SIGINT, teardown);
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
   shared_memory = shmget (DEFAULT_SEMAPHORE_KEY, ROWS * COLS * sizeof (cell_t), DEFAULT_SEMAPHORE_PERMISSIONS | IPC_CREAT);
   shared_memory_ptr = shmat (shared_memory, 0, 0);
 
@@ -109,13 +81,7 @@ int32_t main (int argc, char *argv[])
 
   // decide who starts the game on semaphore creation
   if ((semaphore = semget (DEFAULT_SEMAPHORE_KEY, 2, DEFAULT_SEMAPHORE_PERMISSIONS | IPC_CREAT | IPC_EXCL)) > 0) {
-<<<<<<< HEAD
     player_sign = CROSS;
-=======
-    fprintf (stdout, "You are player nr 1 = X\n");
-    player_sign = CROSS;
-
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
     semctl (semaphore, SEM_PLAYER_0, SETVAL, 0);
     semctl (semaphore, SEM_PLAYER_1, SETVAL, 0);
 
@@ -130,26 +96,17 @@ int32_t main (int argc, char *argv[])
       }
     }
   } else {
-<<<<<<< HEAD
     player_sign = CIRCLE;
     semaphore = semget (DEFAULT_SEMAPHORE_KEY, 2, 077 | IPC_CREAT);
 
     move = &try_move_O;
     lock = &try_X;
 
-=======
-    fprintf (stdout, "You are player nr 2 = O\n");
-    player_sign = CIRCLE;
-    semaphore = semget (DEFAULT_SEMAPHORE_KEY, 2, 077 | IPC_CREAT);
-    move = &try_move_O;
-    lock = &try_X;
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
     semop (semaphore, lock, 1);
   }
 
   // game loop
   while (1<2) {
-<<<<<<< HEAD
     game_print_header (player_sign);
     printw ("Waiting for a second player...\n");
     refresh ();
@@ -159,11 +116,6 @@ int32_t main (int argc, char *argv[])
     game_print_header (player_sign);
     refresh ();
 
-=======
-    fprintf (stdout, "Waiting for opposite player.\n");
-    semop (semaphore, move, 1);
-
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
     game_print_board (board);
     if (game_move_check (board) == GAME_END) {
       teardown (0);
@@ -173,14 +125,9 @@ int32_t main (int argc, char *argv[])
     do {
       uint8_t coordinates_valid = 1;
       do {
-<<<<<<< HEAD
         printw ("Your turn, enter coordinates in format: \"X Y\": ");
         refresh ();
         scanf ("%i %i", &col, &row);
-=======
-        printf ("Your turn, enter coordinates in format: \"X Y\": ");
-        scanf ("%i %i", &row, &col);
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
 
         if (row < 0 || row >= ROWS) {
           coordinates_valid = 0;
@@ -191,13 +138,9 @@ int32_t main (int argc, char *argv[])
       }
       while (!coordinates_valid);
     } while (game_move_make (board, row, col, player_sign) < 0);
-<<<<<<< HEAD
 
     clear ();
     refresh ();
-=======
-    game_print_board (board);
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
     semop (semaphore, lock, 1);
   }
 
@@ -211,7 +154,6 @@ int32_t main (int argc, char *argv[])
 
 void game_print_board (board_t board)
 {
-<<<<<<< HEAD
   printw (" X|");
   for (size_t i = 0; i < COLS; ++i)
   {
@@ -223,23 +165,10 @@ void game_print_board (board_t board)
   for (size_t i = 0; i < ROWS; ++i)
   {
     printw ("%i |", i);
-=======
-  fprintf (stdout, " ");
-  for (size_t i = 0; i < COLS; ++i)
-  {
-    fprintf (stdout, " %li", i);
-  }
-  fprintf (stdout, "\n");
-
-  for (size_t i = 0; i < ROWS; ++i)
-  {
-    fprintf (stdout, "%li|", i);
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
     for (int j = 0; j < COLS; ++j)
     {
       if (board[i][j] == CIRCLE)
       {
-<<<<<<< HEAD
         printw ("O");
       } else if (board[i][j] == CROSS) {
         printw ("X");
@@ -251,19 +180,6 @@ void game_print_board (board_t board)
     printw ("\n");
   }
   printw ("\n");
-=======
-        fprintf (stdout, "O");
-      } else if (board[i][j] == CROSS) {
-        fprintf (stdout, "X");
-      } else {
-        fprintf (stdout, " "); // when empty
-      }
-      fprintf (stdout, "|");
-    }
-    fprintf (stdout, "\n");
-  }
-  fprintf (stdout, "\n");
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
 }
 
 int8_t game_move_check (board_t board)
@@ -286,33 +202,21 @@ int8_t game_move_check (board_t board)
 
 
     if ((vertical_sum == 3 * CROSS) || (horizontal_sum == 3 * CROSS) || (diagonal_sum == 3 * CROSS)) {
-<<<<<<< HEAD
       printw ("X wins!\n");
       refresh ();
-=======
-      fprintf (stdout, "Player X wins!\n");
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
       return GAME_END;
     }
 
     if ((vertical_sum == 3 * CIRCLE) || (horizontal_sum == 3 * CIRCLE) || (diagonal_sum == 3 * CIRCLE)) {
-<<<<<<< HEAD
       printw ("Y wins!\n");
       refresh ();
-=======
-      fprintf (stdout, "Player O wins!\n");
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
       return GAME_END;
     }
   }
 
   if (fields == ROWS*COLS) {
-<<<<<<< HEAD
     printf ("Draw!\n");
     refresh ();
-=======
-    printf ("DRAW!\n");
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
     return GAME_END;
   }
   return 0;
@@ -324,17 +228,12 @@ int8_t game_move_make (board_t board, cell_t row, cell_t col, cell_t player_sign
     board[row][col] = player_sign;
     return 0;
   } else {
-<<<<<<< HEAD
     printw ("Try one more time!\n");
     refresh ();
-=======
-    fprintf (stderr, "Try one more time.\n");
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
     return -1;
   }
 }
 
-<<<<<<< HEAD
 void game_print_header (cell_t player_sign) {
   if (player_sign == CROSS) {
     printw ("== PLAYER 1       ==\n");
@@ -346,8 +245,6 @@ void game_print_header (cell_t player_sign) {
   refresh ();
 }
 
-=======
->>>>>>> 40b69baa6ce7ac7cf1062f8b49a7f07873a7f545
 void teardown (int32_t signal)
 {
   semctl (semaphore, 0, IPC_RMID, 0);
