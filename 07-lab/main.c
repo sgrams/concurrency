@@ -10,7 +10,7 @@
 #include <signal.h>
 #include <string.h>
 #include <stdint.h>
-#include <curses.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -35,11 +35,11 @@
 #define SEM_PLAYER_1 1
 
 // prototypes
-int8_t game_move_check   (board_t board);
-int8_t game_move_make    (board_t board, cell_t row, cell_t col, cell_t player_sign);
-void   game_print_board  (board_t board);
-void   game_print_header (cell_t player_sign);
-void   teardown (int32_t signal);
+void   game_print_board (board_t board);
+int8_t game_move_check  (board_t board);
+int8_t game_move_make   (board_t board, cell_t row, cell_t col, cell_t player_sign);
+
+void teardown (int32_t signal);
 
 // globals
 int32_t shared_memory;
@@ -47,28 +47,19 @@ int32_t semaphore;
 
 int32_t main (int argc, char *argv[])
 {
-  board_t board;
   cell_t *shared_memory_ptr;
   cell_t  player_sign;
+  board_t board;
 
-  // semaphore buffers for two players
   struct sembuf try_move_X = {SEM_PLAYER_0, -1, 0},
                 try_move_O = {SEM_PLAYER_1, -1, 0},
                 try_X = {SEM_PLAYER_0, 1, 0},
-                try_O = {SEM_PLAYER_1, 1, 0};
-
-  // pointers to semaphore buffers
-  struct sembuf *move, *lock;
+                try_O = {SEM_PLAYER_1, 1, 0},
+                *move,
+                *lock;
 
   // gracefully quit on Ctrl+C
   signal (SIGINT, teardown);
-
-  // initialize ncurses
-  initscr ();
-  clear ();
-  echo ();
-  refresh ();
-
   shared_memory = shmget (DEFAULT_SEMAPHORE_KEY, ROWS * COLS * sizeof (cell_t), DEFAULT_SEMAPHORE_PERMISSIONS | IPC_CREAT);
   shared_memory_ptr = shmat (shared_memory, 0, 0);
 
@@ -81,7 +72,9 @@ int32_t main (int argc, char *argv[])
 
   // decide who starts the game on semaphore creation
   if ((semaphore = semget (DEFAULT_SEMAPHORE_KEY, 2, DEFAULT_SEMAPHORE_PERMISSIONS | IPC_CREAT | IPC_EXCL)) > 0) {
+    fprintf (stdout, "You are player nr 1 = X\n");
     player_sign = CROSS;
+
     semctl (semaphore, SEM_PLAYER_0, SETVAL, 0);
     semctl (semaphore, SEM_PLAYER_1, SETVAL, 0);
 
@@ -96,25 +89,18 @@ int32_t main (int argc, char *argv[])
       }
     }
   } else {
+    fprintf (stdout, "You are player nr 2 = O\n");
     player_sign = CIRCLE;
     semaphore = semget (DEFAULT_SEMAPHORE_KEY, 2, 077 | IPC_CREAT);
-
     move = &try_move_O;
     lock = &try_X;
-
     semop (semaphore, lock, 1);
   }
 
   // game loop
   while (1<2) {
-    game_print_header (player_sign);
-    printw ("Waiting for a second player...\n");
-    refresh ();
+    fprintf (stdout, "Waiting for opposite player.\n");
     semop (semaphore, move, 1);
-
-    clear ();
-    game_print_header (player_sign);
-    refresh ();
 
     game_print_board (board);
     if (game_move_check (board) == GAME_END) {
@@ -125,9 +111,8 @@ int32_t main (int argc, char *argv[])
     do {
       uint8_t coordinates_valid = 1;
       do {
-        printw ("Your turn, enter coordinates in format: \"X Y\": ");
-        refresh ();
-        scanf ("%i %i", &col, &row);
+        printf ("Your turn, enter coordinates in format: \"X Y\": ");
+        scanf ("%i %i", &row, &col);
 
         if (row < 0 || row >= ROWS) {
           coordinates_valid = 0;
@@ -138,9 +123,7 @@ int32_t main (int argc, char *argv[])
       }
       while (!coordinates_valid);
     } while (game_move_make (board, row, col, player_sign) < 0);
-
-    clear ();
-    refresh ();
+    game_print_board (board);
     semop (semaphore, lock, 1);
   }
 
@@ -154,32 +137,31 @@ int32_t main (int argc, char *argv[])
 
 void game_print_board (board_t board)
 {
-  printw (" X|");
+  fprintf (stdout, " ");
   for (size_t i = 0; i < COLS; ++i)
   {
-    printw ("%i|", i);
+    fprintf (stdout, " %li", i);
   }
-  printw ("\n");
+  fprintf (stdout, "\n");
 
-  printw ("Y-=======\n");
   for (size_t i = 0; i < ROWS; ++i)
   {
-    printw ("%i |", i);
+    fprintf (stdout, "%li|", i);
     for (int j = 0; j < COLS; ++j)
     {
       if (board[i][j] == CIRCLE)
       {
-        printw ("O");
+        fprintf (stdout, "O");
       } else if (board[i][j] == CROSS) {
-        printw ("X");
+        fprintf (stdout, "X");
       } else {
-        printw (" ");
+        fprintf (stdout, " "); // when empty
       }
-      printw ("|");
+      fprintf (stdout, "|");
     }
-    printw ("\n");
+    fprintf (stdout, "\n");
   }
-  printw ("\n");
+  fprintf (stdout, "\n");
 }
 
 int8_t game_move_check (board_t board)
@@ -202,21 +184,18 @@ int8_t game_move_check (board_t board)
 
 
     if ((vertical_sum == 3 * CROSS) || (horizontal_sum == 3 * CROSS) || (diagonal_sum == 3 * CROSS)) {
-      printw ("X wins!\n");
-      refresh ();
+      fprintf (stdout, "Player X wins!\n");
       return GAME_END;
     }
 
     if ((vertical_sum == 3 * CIRCLE) || (horizontal_sum == 3 * CIRCLE) || (diagonal_sum == 3 * CIRCLE)) {
-      printw ("Y wins!\n");
-      refresh ();
+      fprintf (stdout, "Player O wins!\n");
       return GAME_END;
     }
   }
 
   if (fields == ROWS*COLS) {
-    printf ("Draw!\n");
-    refresh ();
+    printf ("DRAW!\n");
     return GAME_END;
   }
   return 0;
@@ -228,21 +207,9 @@ int8_t game_move_make (board_t board, cell_t row, cell_t col, cell_t player_sign
     board[row][col] = player_sign;
     return 0;
   } else {
-    printw ("Try one more time!\n");
-    refresh ();
+    fprintf (stderr, "Try one more time.\n");
     return -1;
   }
-}
-
-void game_print_header (cell_t player_sign) {
-  if (player_sign == CROSS) {
-    printw ("== PLAYER 1       ==\n");
-    printw ("== X is your sign ==\n");
-  } else {
-    printw ("== PLAYER 2       ==\n");
-    printw ("== O is your sign ==\n");
-  }
-  refresh ();
 }
 
 void teardown (int32_t signal)
