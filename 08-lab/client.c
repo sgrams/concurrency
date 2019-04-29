@@ -27,7 +27,7 @@ int32_t main (int32_t argc, char *argv[])
   int32_t status = 0;
   int32_t x, y;
 
-  // get 4B number pre-allocated on the stack
+  // get number pre-allocated on the stack
   if (argc < 2) {
     fprintf (stdout, "Please provide a number as a parameter to the program.\n");
     return EXIT_SUCCESS;
@@ -63,9 +63,10 @@ calculate_y (int32_t x, int32_t *y)
   }
   msg = htonl (x);
 
-  addr.sin_family = PF_INET;
+  // prepare and populate IPv4 address structure
+  addr.sin_family = AF_INET;
   addr.sin_port   = htons (DEFAULT_SERVER_PORT);
-  status = inet_pton (PF_INET, DEFAULT_SERVER_ADDR, &(addr.sin_addr));
+  status = inet_pton (AF_INET, DEFAULT_SERVER_ADDR, &(addr.sin_addr));
   if (1 > status) {
     status = -1;
     fprintf (stderr, "  unable to perform calculate_y (): inet_pton returned: %s\n", strerror (errno));
@@ -80,6 +81,7 @@ calculate_y (int32_t x, int32_t *y)
     return status;
   }
 
+  // regain control under given socket
   int32_t val = 1;
   status = setsockopt (sockfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&val, sizeof (val));
   if (0 > status) {
@@ -88,19 +90,16 @@ calculate_y (int32_t x, int32_t *y)
   }
 
   // handle communication
-  printf("dupa!\n");
   status = sendto (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, sizeof (addr));
   if (-1 == status) {
     fprintf (stderr, "  unable to perform calculate_y (): sendto returned: %s\n", strerror (errno));
     return status;
   }
-  printf("dupa!\n");
   status = recvfrom (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, &recv_size);
   if (-1 == status) {
     fprintf (stderr, "  unable to perform calculate_y (): recvfrom returned: %s\n", strerror (errno));
     return status;
   }
-  printf("dupa!\n");
 
   // return with success
   *y = ntohl (msg);
