@@ -53,7 +53,7 @@ calculate_y (int32_t x, int32_t *y)
   int32_t  status = 0;
   int32_t  sockfd;
   int32_t  msg;
-  uint32_t recv_size;
+  uint32_t addr_size;
   struct   sockaddr_in addr;
 
   if (NULL == y) {
@@ -72,6 +72,7 @@ calculate_y (int32_t x, int32_t *y)
     fprintf (stderr, "  unable to perform calculate_y (): inet_pton returned: %s\n", strerror (errno));
     return status; // return -1 when address invalid
   }
+  addr_size = sizeof (addr);
 
   // prepare socket and perform bind
   sockfd = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -90,12 +91,12 @@ calculate_y (int32_t x, int32_t *y)
   }
 
   // handle communication
-  status = sendto (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, sizeof (addr));
+  status = sendto (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, addr_size);
   if (-1 == status) {
     fprintf (stderr, "  unable to perform calculate_y (): sendto returned: %s\n", strerror (errno));
     return status;
   }
-  status = recvfrom (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, &recv_size);
+  status = recvfrom (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, &addr_size);
   if (-1 == status) {
     fprintf (stderr, "  unable to perform calculate_y (): recvfrom returned: %s\n", strerror (errno));
     return status;
