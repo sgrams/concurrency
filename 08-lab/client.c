@@ -27,7 +27,8 @@ int32_t main (int32_t argc, char *argv[])
 
   // get 4B number pre-allocated on the stack
   if (argc < 2) {
-    return EXIT_FAILURE;
+    fprintf (stdout, "Please provide a number as a parameter to the program.\n");
+    return EXIT_SUCCESS;
   }
   x = strtol (argv[1], (char **)NULL, 10);
 
@@ -61,7 +62,7 @@ calculate_y (int32_t x, int32_t *y)
   msg = htonl (x);
 
   addr.sin_family = AF_INET;
-  addr.sin_port   = htons ((uint8_t)DEFAULT_SERVER_PORT);
+  addr.sin_port   = htons ((int8_t)DEFAULT_SERVER_PORT);
   status = inet_pton (AF_INET, DEFAULT_SERVER_ADDR, &addr.sin_addr);
   if (1 > status) {
     status = -1;
@@ -70,19 +71,28 @@ calculate_y (int32_t x, int32_t *y)
   }
 
   // prepare socket and perform bind
-  sockfd = socket (PF_INET, SOCK_DGRAM, 0);
-  if (-1 == status) {
+  sockfd = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (-1 == sockfd) {
+    status = sockfd;
     fprintf (stderr, "  unable to perform calculate_y (): socket returned: %s\n", strerror (errno));
     return status;
   }
-  status = bind (sockfd, (struct sockaddr *)&addr, sizeof (addr));
+
+  int32_t val = 1;
+  status = setsockopt (sockfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&val, sizeof (val));
+  if (0 > status) {
+    fprintf (stderr, "  unable to perform calculate_y (): setsockopt returned: %s\n", strerror (errno));
+    return status;
+  }
+
+  status = bind (sockfd, (struct sockaddr *)&addr, sizeof (struct sockaddr));
   if (-1 == status) {
     fprintf (stderr, "  unable to perform calculate_y (): bind returned: %s\n", strerror (errno));
     return status;
   }
 
   // handle communication
-  status = sendto (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, sizeof (addr));
+  status = sendto (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, sizeof (struct sockaddr));
   if (-1 == status) {
     fprintf (stderr, "  unable to perform calculate_y (): sendto returned: %s\n", strerror (errno));
     return status;
