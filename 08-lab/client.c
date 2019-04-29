@@ -85,12 +85,6 @@ calculate_y (int32_t x, int32_t *y)
     return status;
   }
 
-  status = connect (sockfd, (struct sockaddr *)&addr, sizeof (struct sockaddr));
-  if (-1 == status) {
-    fprintf (stderr, "  unable to perform calculate_y (): bind returned: %s\n", strerror (errno));
-    return status;
-  }
-
   // handle communication
   status = sendto (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, sizeof (struct sockaddr));
   if (-1 == status) {
