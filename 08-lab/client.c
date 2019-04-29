@@ -14,8 +14,10 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define DEFAULT_SERVER_ADDR "153.19.1.202"
-#define DEFAULT_SERVER_PORT 5000
+//#define DEFAULT_SERVER_ADDR "153.19.1.202"
+//#define DEFAULT_SERVER_PORT 5000
+#define DEFAULT_SERVER_ADDR "127.0.0.1"
+#define DEFAULT_SERVER_PORT 12345
 
 // prototypes
 int32_t calculate_y (int32_t x, int32_t *y);
@@ -61,9 +63,9 @@ calculate_y (int32_t x, int32_t *y)
   }
   msg = htonl (x);
 
-  addr.sin_family = AF_INET;
-  addr.sin_port   = htons ((int8_t)DEFAULT_SERVER_PORT);
-  status = inet_pton (AF_INET, DEFAULT_SERVER_ADDR, &addr.sin_addr);
+  addr.sin_family = PF_INET;
+  addr.sin_port   = htons (DEFAULT_SERVER_PORT);
+  status = inet_pton (PF_INET, DEFAULT_SERVER_ADDR, &(addr.sin_addr));
   if (1 > status) {
     status = -1;
     fprintf (stderr, "  unable to perform calculate_y (): inet_pton returned: %s\n", strerror (errno));
@@ -71,7 +73,7 @@ calculate_y (int32_t x, int32_t *y)
   }
 
   // prepare socket and perform bind
-  sockfd = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  sockfd = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (-1 == sockfd) {
     status = sockfd;
     fprintf (stderr, "  unable to perform calculate_y (): socket returned: %s\n", strerror (errno));
@@ -86,16 +88,19 @@ calculate_y (int32_t x, int32_t *y)
   }
 
   // handle communication
-  status = sendto (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, sizeof (struct sockaddr));
+  printf("dupa!\n");
+  status = sendto (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, sizeof (addr));
   if (-1 == status) {
     fprintf (stderr, "  unable to perform calculate_y (): sendto returned: %s\n", strerror (errno));
     return status;
   }
+  printf("dupa!\n");
   status = recvfrom (sockfd, (uint8_t *)&msg, sizeof (int32_t), 0, (struct sockaddr *)&addr, &recv_size);
   if (-1 == status) {
     fprintf (stderr, "  unable to perform calculate_y (): recvfrom returned: %s\n", strerror (errno));
     return status;
   }
+  printf("dupa!\n");
 
   // return with success
   *y = ntohl (msg);
